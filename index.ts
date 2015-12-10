@@ -13,6 +13,24 @@ function initialize() {
     home();
 }
 
+// show home pain
+function home() {
+    $(() => {
+        $('button').removeClass('active');
+        $('span.icon-home').parent('button').addClass('active');
+        $('.content').hide();
+        $('#home').show();
+
+        $('#get_message_button').on('click', function () {
+            return get_message();
+        });
+    });
+    update_button_mode_get_message();
+    update_message_list();
+    return false;
+}
+
+// show setting pain
 function setting() {
     $(() => {
         $('button').removeClass('active');
@@ -43,20 +61,41 @@ function setting() {
     return false;
 }
 
-function home() {
-    $(() => {
-        $('button').removeClass('active');
-        $('span.icon-home').parent('button').addClass('active');
-        $('.content').hide();
-        $('#home').show();
-
-        $('#get_message_button').on('click', function () {
-            return get_message();
-        });
+// update signal list
+function update_message_list() {
+    var table = $('#message_list');
+    var html = '';
+    for (var i = 0; i < ir_messages.length; i++) {
+        var m = ir_messages[i];
+        if (m.data == null) {
+            continue;
+        }
+        html += `
+<tr>
+    <td>
+        <button onclick="return post_message(${i});" class="bin btn-positive btn-large">send</button>
+    </td>
+    <td>
+        <input type="text" class="message-action" id="action_${i}" value="${m.action || ''}"/>
+    </td>
+    <td>
+        <input type="text" class="message-category" id="category_${i}" value="${m.category || ''}"/>
+    </td>
+    <td>${m.updated || ''}</td>
+</tr>
+`;
+    }
+    table.html(html);
+    $('.message-action, .message-category').on('change', function () {
+        var a = $(this).attr('id').split('_');
+        var id = a[1];
+        var m = moment();
+        ir_messages[id].action = $("#action_" + id).val();
+        ir_messages[id].category = $("#category_" + id).val();
+        ir_messages[id].updated = m.format("YYYY/MM/DD hh:mm:ss");
+        save_messages();
+        update_message_list();
     });
-    update_button_mode_get_message();
-    update_message_list();
-    return false;
 }
 
 function get_client_token() {
@@ -104,6 +143,7 @@ function get_client_token() {
     return false;
 }
 
+// Get Client Token button active control
 function update_button_mode_get_client_token(column) {
     var ip_address = column.val();
     var button = $('#get_client_token_button');
@@ -122,6 +162,7 @@ function update_button_mode_get_client_token(column) {
     }
 }
 
+// Get Signal button active control
 function update_button_mode_get_message() {
     var button = $('#get_message_button');
     if (localStorage.getItem('ip_address') && localStorage.getItem('client_key') && localStorage.getItem('device_id')) {
@@ -135,7 +176,7 @@ function update_button_mode_get_message() {
     }
 }
 
-
+// get signal request
 function get_message() {
     var ip_address = localStorage.getItem('ip_address');
     $.ajax({
@@ -156,6 +197,7 @@ function get_message() {
     });
 }
 
+// post signal request
 function post_message(id) {
     var ip_address = localStorage.getItem('ip_address');
     $.ajax({
@@ -178,6 +220,8 @@ function post_message(id) {
     });
 }
 
+
+// save to localStorage
 function save_messages() {
     console.log(ir_messages);
     ir_messages.sort(function (a, b) {
@@ -199,42 +243,8 @@ function save_messages() {
     localStorage.setItem('messages', JSON.stringify(ir_messages));
 }
 
+// load from localStorage
 function load_messages() {
     ir_messages = JSON.parse(localStorage.getItem('messages'));
 }
 
-function update_message_list() {
-    var table = $('#message_list');
-    var html = '';
-    for (var i = 0; i < ir_messages.length; i++) {
-        var m = ir_messages[i];
-        if (m.data == null) {
-            continue;
-        }
-        html += `
-<tr>
-    <td>
-        <button onclick="return post_message(${i});" class="bin btn-positive btn-large">send</button>
-    </td>
-    <td>
-        <input type="text" class="message-action" id="action_${i}" value="${m.action || ''}"/>
-    </td>
-    <td>
-        <input type="text" class="message-category" id="category_${i}" value="${m.category || ''}"/>
-    </td>
-    <td>${m.updated || ''}</td>
-</tr>
-`;
-    }
-    table.html(html);
-    $('.message-action, .message-category').on('change', function () {
-        var a = $(this).attr('id').split('_');
-        var id = a[1];
-        var m = moment();
-        ir_messages[id].action = $("#action_" + id).val();
-        ir_messages[id].category = $("#category_" + id).val();
-        ir_messages[id].updated = m.format("YYYY/MM/DD hh:mm:ss");
-        save_messages();
-        update_message_list();
-    });
-}

@@ -15,7 +15,7 @@ app.on('ready', function () {
     mainWindow = new BrowserWindow({ width: 800, height: 600 });
     mainWindow.openDevTools();
     // index.htmlを開く
-    mainWindow.loadUrl('file://' + __dirname + '/index.html');
+    mainWindow.loadURL('file://' + __dirname + '/index.html');
     // ウィンドウが閉じられたら、ウィンドウへの参照を破棄する。
     mainWindow.on('closed', function () {
         mainWindow = null;

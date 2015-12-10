@@ -8,35 +8,14 @@ var http = remote.require('http');
 var ir_messages = [];
 function initialize() {
     load_messages();
-    home();
+    if (localStorage.getItem('ip_address')) {
+        home();
+    } else {
+        setting();
+    }
+
 }
-function setting() {
-    $(function () {
-        $('button').removeClass('active');
-        $('span.icon-cog').parent('button').addClass('active');
-        $('.content').hide();
-        $('#setting').show();
-        var ip_selector = $('#ip_address');
-        ip_selector
-            .on('load', function () {
-            update_button_mode_get_client_token($(this));
-        })
-            .on('change', function () {
-            update_button_mode_get_client_token($(this));
-        })
-            .on('keyup', function () {
-            update_button_mode_get_client_token($(this));
-        });
-        ip_selector.val(localStorage.getItem('ip_address') || '');
-        $('#client_key').val(localStorage.getItem('client_key') || '');
-        $('#device_id').val(localStorage.getItem('device_id') || '');
-        update_button_mode_get_client_token(ip_selector);
-        $('#get_client_token_button').on('click', function () {
-            return get_client_token();
-        });
-    });
-    return false;
-}
+// show home pain
 function home() {
     $(function () {
         $('button').removeClass('active');
@@ -50,6 +29,58 @@ function home() {
     update_button_mode_get_message();
     update_message_list();
     return false;
+}
+// show setting pain
+function setting() {
+    $(function () {
+        $('button').removeClass('active');
+        $('span.icon-cog').parent('button').addClass('active');
+        $('.content').hide();
+        $('#setting').show();
+        var ip_selector = $('#ip_address');
+        ip_selector
+            .on('load', function () {
+                update_button_mode_get_client_token($(this));
+            })
+            .on('change', function () {
+                localStorage.setItem('ip_address', ip_selector.val());
+                update_button_mode_get_client_token($(this));
+            })
+            .on('keyup', function () {
+                update_button_mode_get_client_token($(this));
+            });
+        ip_selector.val(localStorage.getItem('ip_address') || '');
+        $('#client_key').val(localStorage.getItem('client_key') || '');
+        $('#device_id').val(localStorage.getItem('device_id') || '');
+        update_button_mode_get_client_token(ip_selector);
+        $('#get_client_token_button').on('click', function () {
+            return get_client_token();
+        });
+    });
+    return false;
+}
+// update signal list
+function update_message_list() {
+    var table = $('#message_list');
+    var html = '';
+    for (var i = 0; i < ir_messages.length; i++) {
+        var m = ir_messages[i];
+        if (m.data == null) {
+            continue;
+        }
+        html += "\n<tr>\n    <td>\n        <button onclick=\"return post_message(" + i + ");\" class=\"bin btn-positive btn-large\">send</button>\n    </td>\n    <td>\n        <input type=\"text\" class=\"message-action\" id=\"action_" + i + "\" value=\"" + (m.action || '') + "\"/>\n    </td>\n    <td>\n        <input type=\"text\" class=\"message-category\" id=\"category_" + i + "\" value=\"" + (m.category || '') + "\"/>\n    </td>\n    <td>" + (m.updated || '') + "</td>\n</tr>\n";
+    }
+    table.html(html);
+    $('.message-action, .message-category').on('change', function () {
+        var a = $(this).attr('id').split('_');
+        var id = a[1];
+        var m = moment();
+        ir_messages[id].action = $("#action_" + id).val();
+        ir_messages[id].category = $("#category_" + id).val();
+        ir_messages[id].updated = m.format("YYYY/MM/DD hh:mm:ss");
+        save_messages();
+        update_message_list();
+    });
 }
 function get_client_token() {
     var ip_address = $('#ip_address').val();
@@ -94,6 +125,7 @@ function get_client_token() {
     });
     return false;
 }
+// Get Client Token button active control
 function update_button_mode_get_client_token(column) {
     var ip_address = column.val();
     var button = $('#get_client_token_button');
@@ -112,6 +144,7 @@ function update_button_mode_get_client_token(column) {
         }
     }
 }
+// Get Signal button active control
 function update_button_mode_get_message() {
     var button = $('#get_message_button');
     if (localStorage.getItem('ip_address') && localStorage.getItem('client_key') && localStorage.getItem('device_id')) {
@@ -125,6 +158,7 @@ function update_button_mode_get_message() {
         }
     }
 }
+// get signal request
 function get_message() {
     var ip_address = localStorage.getItem('ip_address');
     $.ajax({
@@ -136,7 +170,7 @@ function get_message() {
         }
     }).done(function (response) {
         console.log(response);
-        ir_messages[ir_messages.length] = { 'data': response.data, 'freq': response.freq, 'format': response.format };
+        ir_messages[ir_messages.length] = {'data': response.data, 'freq': response.freq, 'format': response.format};
         save_messages();
         update_message_list();
     }).fail(function (response) {
@@ -144,6 +178,7 @@ function get_message() {
         console.log(response);
     });
 }
+// post signal request
 function post_message(id) {
     var ip_address = localStorage.getItem('ip_address');
     $.ajax({
@@ -151,20 +186,26 @@ function post_message(id) {
         type: 'post',
         dataType: 'json',
         processData: false,
-        data: JSON.stringify({ "message": JSON.stringify(ir_messages[id]) }),
+        data: JSON.stringify({"message": JSON.stringify(ir_messages[id])}),
         headers: {
             "X-Requested-With": "curl"
         }
     }).done(function (response) {
         console.log(response);
         var m = moment();
-        ir_messages[ir_messages.length] = { 'data': response.data, 'freq': response.freq, 'format': response.format, 'updated': m.format("YYYY/MM/DD hh:mm:ss") };
+        ir_messages[ir_messages.length] = {
+            'data': response.data,
+            'freq': response.freq,
+            'format': response.format,
+            'updated': m.format("YYYY/MM/DD hh:mm:ss")
+        };
         save_messages();
     }).fail(function (response) {
         console.log('failure');
         console.log(response);
     });
 }
+// save to localStorage
 function save_messages() {
     console.log(ir_messages);
     ir_messages.sort(function (a, b) {
@@ -185,29 +226,8 @@ function save_messages() {
     console.log(ir_messages);
     localStorage.setItem('messages', JSON.stringify(ir_messages));
 }
+// load from localStorage
 function load_messages() {
     ir_messages = JSON.parse(localStorage.getItem('messages'));
-}
-function update_message_list() {
-    var table = $('#message_list');
-    var html = '';
-    for (var i = 0; i < ir_messages.length; i++) {
-        var m = ir_messages[i];
-        if (m.data == null) {
-            continue;
-        }
-        html += "\n<tr>\n    <td>\n        <button onclick=\"return post_message(" + i + ");\" class=\"bin btn-positive btn-large\">send</button>\n    </td>\n    <td>\n        <input type=\"text\" class=\"message-action\" id=\"action_" + i + "\" value=\"" + (m.action || '') + "\"/>\n    </td>\n    <td>\n        <input type=\"text\" class=\"message-category\" id=\"category_" + i + "\" value=\"" + (m.category || '') + "\"/>\n    </td>\n    <td>" + (m.updated || '') + "</td>\n</tr>\n";
-    }
-    table.html(html);
-    $('.message-action, .message-category').on('change', function () {
-        var a = $(this).attr('id').split('_');
-        var id = a[1];
-        var m = moment();
-        ir_messages[id].action = $("#action_" + id).val();
-        ir_messages[id].category = $("#category_" + id).val();
-        ir_messages[id].updated = m.format("YYYY/MM/DD hh:mm:ss");
-        save_messages();
-        update_message_list();
-    });
 }
 //# sourceMappingURL=index.js.map
