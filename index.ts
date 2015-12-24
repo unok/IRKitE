@@ -65,12 +65,13 @@ function setting() {
 function update_message_list() {
     var table = $('#message_list');
     var html = '';
-    for (var i = 0; i < ir_messages.length; i++) {
-        var m = ir_messages[i];
-        if (m.data == null) {
-            continue;
-        }
-        html += `
+    if (ir_messages != null && Array.isArray(ir_messages)) {
+        for (var i = 0; i < ir_messages.length; i++) {
+            var m = ir_messages[i];
+            if (m.data == null || m.updated == null) {
+                continue;
+            }
+            html += `
 <tr>
     <td>
         <button onclick="return post_message(${i});" class="bin btn-positive btn-large">send</button>
@@ -84,6 +85,7 @@ function update_message_list() {
     <td>${m.updated || ''}</td>
 </tr>
 `;
+        }
     }
     table.html(html);
     $('.message-action, .message-category').on('change', function () {

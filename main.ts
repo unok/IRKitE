@@ -20,7 +20,7 @@ app.on('ready', function () {
     mainWindow.openDevTools();
 
     // index.htmlを開く
-    mainWindow.loadURL('file://' + __dirname + '/index.html');
+    mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
 
     // ウィンドウが閉じられたら、ウィンドウへの参照を破棄する。

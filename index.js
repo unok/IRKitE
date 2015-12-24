@@ -8,12 +8,7 @@ var http = remote.require('http');
 var ir_messages = [];
 function initialize() {
     load_messages();
-    if (localStorage.getItem('ip_address')) {
-        home();
-    } else {
-        setting();
-    }
-
+    home();
 }
 // show home pain
 function home() {
@@ -40,15 +35,14 @@ function setting() {
         var ip_selector = $('#ip_address');
         ip_selector
             .on('load', function () {
-                update_button_mode_get_client_token($(this));
-            })
+            update_button_mode_get_client_token($(this));
+        })
             .on('change', function () {
-                localStorage.setItem('ip_address', ip_selector.val());
-                update_button_mode_get_client_token($(this));
-            })
+            update_button_mode_get_client_token($(this));
+        })
             .on('keyup', function () {
-                update_button_mode_get_client_token($(this));
-            });
+            update_button_mode_get_client_token($(this));
+        });
         ip_selector.val(localStorage.getItem('ip_address') || '');
         $('#client_key').val(localStorage.getItem('client_key') || '');
         $('#device_id').val(localStorage.getItem('device_id') || '');
@@ -63,12 +57,14 @@ function setting() {
 function update_message_list() {
     var table = $('#message_list');
     var html = '';
-    for (var i = 0; i < ir_messages.length; i++) {
-        var m = ir_messages[i];
-        if (m.data == null) {
-            continue;
+    if (ir_messages != null && Array.isArray(ir_messages)) {
+        for (var i = 0; i < ir_messages.length; i++) {
+            var m = ir_messages[i];
+            if (m.data == null || m.updated == null) {
+                continue;
+            }
+            html += "\n<tr>\n    <td>\n        <button onclick=\"return post_message(" + i + ");\" class=\"bin btn-positive btn-large\">send</button>\n    </td>\n    <td>\n        <input type=\"text\" class=\"message-action\" id=\"action_" + i + "\" value=\"" + (m.action || '') + "\"/>\n    </td>\n    <td>\n        <input type=\"text\" class=\"message-category\" id=\"category_" + i + "\" value=\"" + (m.category || '') + "\"/>\n    </td>\n    <td>" + (m.updated || '') + "</td>\n</tr>\n";
         }
-        html += "\n<tr>\n    <td>\n        <button onclick=\"return post_message(" + i + ");\" class=\"bin btn-positive btn-large\">send</button>\n    </td>\n    <td>\n        <input type=\"text\" class=\"message-action\" id=\"action_" + i + "\" value=\"" + (m.action || '') + "\"/>\n    </td>\n    <td>\n        <input type=\"text\" class=\"message-category\" id=\"category_" + i + "\" value=\"" + (m.category || '') + "\"/>\n    </td>\n    <td>" + (m.updated || '') + "</td>\n</tr>\n";
     }
     table.html(html);
     $('.message-action, .message-category').on('change', function () {
@@ -170,7 +166,7 @@ function get_message() {
         }
     }).done(function (response) {
         console.log(response);
-        ir_messages[ir_messages.length] = {'data': response.data, 'freq': response.freq, 'format': response.format};
+        ir_messages[ir_messages.length] = { 'data': response.data, 'freq': response.freq, 'format': response.format };
         save_messages();
         update_message_list();
     }).fail(function (response) {
@@ -186,19 +182,14 @@ function post_message(id) {
         type: 'post',
         dataType: 'json',
         processData: false,
-        data: JSON.stringify({"message": JSON.stringify(ir_messages[id])}),
+        data: JSON.stringify({ "message": JSON.stringify(ir_messages[id]) }),
         headers: {
             "X-Requested-With": "curl"
         }
     }).done(function (response) {
         console.log(response);
         var m = moment();
-        ir_messages[ir_messages.length] = {
-            'data': response.data,
-            'freq': response.freq,
-            'format': response.format,
-            'updated': m.format("YYYY/MM/DD hh:mm:ss")
-        };
+        ir_messages[ir_messages.length] = { 'data': response.data, 'freq': response.freq, 'format': response.format, 'updated': m.format("YYYY/MM/DD hh:mm:ss") };
         save_messages();
     }).fail(function (response) {
         console.log('failure');
